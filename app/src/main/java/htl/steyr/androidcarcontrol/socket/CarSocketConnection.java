@@ -89,6 +89,16 @@ public class CarSocketConnection implements ICarControlPublisher, ICarSocketConn
 
     public void stop() {
         running = false;
+        /*
+        try {
+            inputStream.close();
+            outputStream.close();
+            carSocket.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+         */
     }
 
     public void notifyAll(ICarMessage msg) {

@@ -1,8 +1,6 @@
 package htl.steyr.androidcarcontrol;
 
-import android.app.Activity;
-import android.content.Context;
-import android.graphics.Color;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -10,7 +8,6 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -18,8 +15,8 @@ import android.widget.SeekBar;
 import android.widget.Switch;
 
 import androidx.appcompat.app.AppCompatActivity;
-
-import java.util.Arrays;
+import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 
 import htl.steyr.androidcarcontrol.socket.CarSocketConnection;
 import htl.steyr.androidcarcontrol.socket.ICarControlSubscriber;
@@ -28,7 +25,7 @@ import htl.steyr.androidcarcontrol.socket.ICarMessage;
 public class MainActivity extends AppCompatActivity implements ICarControlSubscriber {
 
     Thread myThread = null;
-    CarSocketConnection carSocket = null;
+    public static CarSocketConnection carSocket = null;
     private long lastUpdate = 0;
     private long lastUpdate_rotation = 0;
 
@@ -84,7 +81,7 @@ public class MainActivity extends AppCompatActivity implements ICarControlSubscr
 
                         carSocket.addSubscriber(sub);
 
-
+                        findViewById(R.id.goToGyroButton).setEnabled(true);
                     }
                 };
 
@@ -98,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements ICarControlSubscr
         View.OnTouchListener touch = new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                if (System.currentTimeMillis() - lastUpdate > 300) {
+                if (System.currentTimeMillis() - lastUpdate > 100) {
                     lastUpdate = System.currentTimeMillis();
                     SeekBar right = findViewById(R.id.rightSeekBar);
                     SeekBar left = findViewById(R.id.leftSeekBar);
@@ -136,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements ICarControlSubscr
                     // den folgenden Kommentar auflösen.
                     // Dieser Code enthält die Reaktion auf Button-Presses
 
-                    /*case R.id.forwardButton:
+                    case R.id.forwardButton:
                         command = "F";
                         break;
                     case R.id.backwardButton:
@@ -147,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements ICarControlSubscr
                         break;
                     case R.id.rightButton:
                         command = "R";
-                        break;*/
+                        break;
                     case R.id.stopButton:
                         command = "S";
                         SeekBar right = findViewById(R.id.rightSeekBar);
@@ -201,8 +198,6 @@ public class MainActivity extends AppCompatActivity implements ICarControlSubscr
             }
         };
 
-        findViewById(R.id.testingButton).setOnTouchListener(touchListener);
-
         Button btn = findViewById(R.id.rightButton);
         btn.setOnClickListener(listener);
         btn = findViewById(R.id.leftButton);
@@ -229,6 +224,20 @@ public class MainActivity extends AppCompatActivity implements ICarControlSubscr
                 }
             });
         }
+
+        View.OnClickListener goToGyroListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent switchIntent = new Intent(MainActivity.this, GyroControlActivity.class);
+
+                EditText hostTextField = findViewById(R.id.hostTextField);
+                switchIntent.putExtra("carSocket", hostTextField.getText().toString());
+
+                startActivity(switchIntent);
+            }
+        };
+
+        findViewById(R.id.goToGyroButton).setOnClickListener(goToGyroListener);
     }
 
     @Override
@@ -366,7 +375,11 @@ public class MainActivity extends AppCompatActivity implements ICarControlSubscr
                      * Ansteuerung an Server übermitteln
                      * Jetzt in richtigen Format
                      */
-                    System.out.println(left + " " + right);
+                    System.out.println("left: " + left + ", right: " + right);
+
+                     if (carSocket != null) {
+                        carSocket.sendMessage("D;" + (int) left + ";" + (int) right);
+                    }
                 }
             }
 
@@ -380,6 +393,8 @@ public class MainActivity extends AppCompatActivity implements ICarControlSubscr
                 rotationVectorSensor, SensorManager.SENSOR_DELAY_NORMAL);
 
         System.out.println(orientationNegative);
+
+
     }
 
     @Override
@@ -388,4 +403,5 @@ public class MainActivity extends AppCompatActivity implements ICarControlSubscr
 
         sensorManager.unregisterListener(rvListener);
     }
+
 }
